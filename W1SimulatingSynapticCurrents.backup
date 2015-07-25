@@ -1,0 +1,32 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{listings}
+
+
+%opening
+\title{}
+\author{}
+
+\begin{document}
+\title{Simulating synaptic currents through ion channels}
+\maketitle
+
+\section{}
+
+The aim this week is to get familiar with the basic syntax in the Brian spiking neural network simulator (Python) and implement a simple model, without the attempt to capture biological realism. We create a layer of input neurons spiking according to Poisson statistics. Each neuron in the layer is connected to one neuron in the layer above it via excitatory AMPAR synapses. We then observe the spiking patterns in this upper layer of isolated neurons. 
+
+Brian permits to explicitly write down the differential equations describing voltage fluctuations in response to synaptic inputs for simulation. The dynamics governing a synaptic current is given by the following equation:
+\[I_{syn}(t)=g_{syn}(t)s(t)(V(t)-E_{syn})\]
+where \(I\) is the current, \(g\) is the synaptic conductance, \(s\) is the gating variable representing the fraction of open channels, \(V\) is the voltage and \(E\) is the reversal potential of the ions passing through the synapse. This equation describes how  neurotransmitter binding to post-synaptic receptors results in a current due to the conductance of synaptic ion channels. The current is driven by the difference of the membrane voltage from the reversal potential of the ion that the channel is permeable to. 
+
+In Brian this equation is written in the following form:
+
+\begin{lstlisting}
+eqs_i='''
+dv/dt=(-gl_i*(v-El_i)-g_ext_i*s_ext*(v-E_ampa))/Cm_i: volt
+ds_ext/dt=-s_ext/t_ampa : 1
+'''
+\end{lstlisting}
+
+\end{document}
