@@ -150,7 +150,7 @@ fweight=rfft(weight_e)
 
 @network_operation(clock=simulation_clock, when='start')
 def update_nmda(clock=simulation_clock):
-    s_NMDA1=irfft(rfft(exc_neurons.s_nmda)*fweight).sum()
+    s_NMDA1=irfft(rfft(exc_neurons.s_nmda)*fweight)
     s_NMDA2=exc_neurons.s_nmda.sum() 
     exc_neurons.s_tot=s_NMDA1
     inhibitory_neurons.s_tot=s_NMDA2
