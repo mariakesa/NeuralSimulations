@@ -6,9 +6,7 @@ Created on Mon Jul 27 15:02:02 2015
 """
 
 from brian import *
-'''
-This is unfinished work.
-'''
+
 #########
 #Number of Neurons
 ##########
@@ -195,4 +193,7 @@ run(simulation_time)
 spikes=M.spikes
 #raster_plot(Z)
 
+#This plots the synaptic gating variable for NMDA inhibitory
+#neurons or excitatory neurons
 plot(NMDA_profile_inh)
+#plot(NMDA_profile)
