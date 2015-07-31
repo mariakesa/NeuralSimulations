@@ -22,7 +22,7 @@ simulation_clock=Clock(dt=0.02*ms)
 #Inhibitory Neurons
 ############################
 inh_eqs='''
-dv/dt=(-gl_i*(v-El_i)-g_ext_i*s_ext*(v-E_ampa)-Gii*s_gaba*(v-E_gaba)-Gei*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v)))/Cm_i: mV
+dv/dt=(-gl_i*(v-El_i)-g_ext_i*s_ext*(v-E_ampa)-Gii*s_gaba*(v-E_gaba)-Gei*s_tot*(v-E_nmda)/(1+b*exp(-a*v/(1*mV))))/Cm_i: volt
 ds_ext/dt=-s_ext/t_ampa : 1
 ds_gaba/dt=-s_gaba/t_gaba :1
 ds_nmda/dt = -s_nmda/t_nmda+alpha*x*(1-s_nmda) : 1
@@ -50,14 +50,14 @@ Gii=1.024*nS
 Gei=0.292*nS
 
 b=1.0/3.57
-a=1.0/0.062*mV
+a=0.062
 
 ######################################
 #Excitatory neurons
 ######################################
 
 exc_eqs='''
-dv/dt=(-g_l_exc*(v-E_l_exc)-g_ext_e*s_ext*(v-E_ampa)-Gie*s_gaba*(v-E_gaba)-Gee*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v))+I_e)/C_exc: mV
+dv/dt=(-g_l_exc*(v-E_l_exc)-g_ext_e*s_ext*(v-E_ampa)-Gie*s_gaba*(v-E_gaba)-Gee*s_tot*(v-E_nmda)/(1+b*exp(-a*v/(1*mV)))+I_e)/C_exc: volt
 ds_ext/dt=-s_ext/t_ampa : 1
 ds_gaba/dt=-s_gaba/t_gaba :1
 ds_nmda/dt = -s_nmda/t_nmda+alpha*x*(1-s_nmda) : 1
@@ -65,7 +65,6 @@ dx/dt = -x/t_x :1
 s_tot :1
 I_e : pA
 '''
-#EI=current_e*(t>=tc_start)*(t<=tc_stop) : pA
 
 #Excitatory Neurons
 C_exc = 0.5*nF
@@ -90,8 +89,8 @@ Gee=0.381*nS
 t_nmda=100*ms
 t_x=2*ms
 b=1.0/3.57
-a=1.0/0.062*mV
-alpha= 0.5*kHz
+a=0.062
+alpha= 2.0*kHz
 E_nmda=0*mV
 reset='''
 v=V_reset_exc
@@ -143,11 +142,14 @@ fweight=rfft(weight_e)
 
 
 ###########################
-
+NMDA_profile=[]
+NMDA_profile_inh=[]
 @network_operation(clock=simulation_clock, when='start')
 def update_nmda(clock=simulation_clock):
     s_NMDA1=irfft(rfft(exc_neurons.s_nmda)*fweight)
+    NMDA_profile.append(s_NMDA1[1000]) 
     s_NMDA2=exc_neurons.s_nmda.sum() 
+    NMDA_profile_inh.append(s_NMDA2)
     exc_neurons.s_tot=s_NMDA1
     inhibitory_neurons.s_tot=s_NMDA2
 
@@ -191,4 +193,6 @@ R= SpikeMonitor(input_exc_Poisson)
 O= SpikeMonitor(input_signal)
 run(simulation_time)
 spikes=M.spikes
-raster_plot(Z)
+#raster_plot(Z)
+
+plot(NMDA_profile_inh)
