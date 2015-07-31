@@ -22,7 +22,7 @@ simulation_clock=Clock(dt=0.02*ms)
 #Inhibitory Neurons
 ############################
 inh_eqs='''
-dv/dt=(-gl_i*(v-El_i)-g_ext_i*s_ext*(v-E_ampa)-Gii*s_gaba*(v-E_gaba)-Gei*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v)))/Cm_i: volt
+dv/dt=(-gl_i*(v-El_i)-g_ext_i*s_ext*(v-E_ampa)-Gii*s_gaba*(v-E_gaba)-Gei*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v)))/Cm_i: mV
 ds_ext/dt=-s_ext/t_ampa : 1
 ds_gaba/dt=-s_gaba/t_gaba :1
 ds_nmda/dt = -s_nmda/t_nmda+alpha*x*(1-s_nmda) : 1
@@ -49,19 +49,23 @@ fext=1.8*kHz
 Gii=1.024*nS
 Gei=0.292*nS
 
+b=1.0/3.57
+a=1.0/0.062*mV
+
 ######################################
 #Excitatory neurons
 ######################################
 
 exc_eqs='''
-dv/dt=(-g_l_exc*(v-E_l_exc)-g_ext_e*s_ext*(v-E_ampa)-Gie*s_gaba*(v-E_gaba)-Gee*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v))+I)/C_exc: volt
+dv/dt=(-g_l_exc*(v-E_l_exc)-g_ext_e*s_ext*(v-E_ampa)-Gie*s_gaba*(v-E_gaba)-Gee*s_tot*(v-E_nmda)/(1+b*exp(-1/a*v))+I_e)/C_exc: mV
 ds_ext/dt=-s_ext/t_ampa : 1
 ds_gaba/dt=-s_gaba/t_gaba :1
 ds_nmda/dt = -s_nmda/t_nmda+alpha*x*(1-s_nmda) : 1
 dx/dt = -x/t_x :1
 s_tot :1
-I=current_e*(t>=tc_start)*(t<=tc_stop) : pA 
+I_e : pA
 '''
+#EI=current_e*(t>=tc_start)*(t<=tc_stop) : pA
 
 #Excitatory Neurons
 C_exc = 0.5*nF
@@ -85,45 +89,22 @@ t_gaba=10*ms
 Gee=0.381*nS
 t_nmda=100*ms
 t_x=2*ms
-b=1/3.57
-a=1/0.062*mV
+b=1.0/3.57
+a=1.0/0.062*mV
 alpha= 0.5*kHz
 E_nmda=0*mV
 reset='''
 v=V_reset_exc
 x+=1*1
 '''
-Vr_e=-60*mV
-
-    
-###########################
-#Input stimulation
-###########################
-    
-tc_start=1*second
-tc_stop=1.25*second 
-
-i_cue_ang=180 
-i_cue_amp=200*pA
-i_cue_width=25
-def circ_distance(deltaTheta):
-    if (deltaTheta>0):
-        return min(deltaTheta,360-deltaTheta)
-    else:
-        return max(deltaTheta,deltaTheta-360)
-        
-currents = lambda i,j : i_cue_amp*exp(-0.5*circ_distance
-((i-j)*360./nr_of_excitatory_neurons)**2/i_cue_width**2)
-current_e = zeros(nr_of_excitatory_neurons)
-j= i_cue_ang*nr_of_excitatory_neurons/360.
-
-for i in xrange(nr_of_excitatory_neurons):
-    current_e[i]=currents(i,j)
     
 
 ####################
 #Defining neuron groups
 ####################
+
+tc_start=1*second
+tc_stop=1.25*second  
 
 inhibitory_neurons=NeuronGroup(nr_of_inhibitory_neurons,inh_eqs,threshold=inh_th,reset=nmda_reset,refractory=inh_ref, clock=simulation_clock, order=2)
 
@@ -147,7 +128,7 @@ conn_EI=Connection(exc_neurons,inhibitory_neurons,'s_tot',weight=1.0)
 #########################
 #Pre-computation of the weights
 #########################
-
+#THIS PART SHOULD BE OKAY
 from scipy.special import erf
 from numpy.fft import rfft, irfft
 
@@ -159,7 +140,7 @@ Jm_ee=(1.-Jp_ee*tmp)/(1.-tmp)
 weight= lambda i: (Jm_ee+(Jp_ee-Jm_ee)* exp(-0.5*(360.*min(i,nr_of_excitatory_neurons-i)/nr_of_excitatory_neurons)**2/sigma_ee**2))
 
 weight_e=zeros(nr_of_excitatory_neurons)
-for i in xrange(nr_of_excitatory_neurons):
+for i in xrange(nr_of_excitatory_neurons):    
     weight_e[i]=weight(i)
     
 fweight=rfft(weight_e)
@@ -169,24 +150,42 @@ fweight=rfft(weight_e)
 
 @network_operation(clock=simulation_clock, when='start')
 def update_nmda(clock=simulation_clock):
-    s_NMDA1=irfft(rfft(exc_neurons.s_nmda)*fweight)
-    s_NMDA2=exc_neurons.s_nmda.sum()    
+    s_NMDA1=irfft(rfft(exc_neurons.s_nmda)*fweight).sum()
+    s_NMDA2=exc_neurons.s_nmda.sum() 
     exc_neurons.s_tot=s_NMDA1
     inhibitory_neurons.s_tot=s_NMDA2
-    
-'''
-    
+
+###########################
+#Input stimulation
+###########################
+
+i_cue_ang=180
+i_cue_amp=200
+i_cue_width=10
+def circ_distance(deltaTheta):
+    if (deltaTheta>0):
+        return min(deltaTheta,360-deltaTheta)
+    else:
+        return max(deltaTheta,deltaTheta-360)
+        
+currents = lambda i,j : i_cue_amp*exp(-0.5*circ_distance
+((i-j)*360./nr_of_excitatory_neurons)**2/i_cue_width**2)
+current_e = zeros(nr_of_excitatory_neurons)
+j= i_cue_ang*nr_of_excitatory_neurons/360.
+
+for i in xrange(nr_of_excitatory_neurons):
+    current_e[i]=currents(i,j)
+   
 current_clock=Clock(dt=50*ms)
 tc_start=1*second
 tc_stop=1.25*second    
 @network_operation(current_clock, when='start')
 def update_currents(current_clock):
     if (current_clock.t>tc_start and current_clock.t<tc_stop):
-        exc_neurons.I_on=current_e
+        exc_neurons.I_e=current_e
         
     else:
-        exc_neurons.I_on=0
-'''
+        exc_neurons.I_e=0
     
 simulation_time=5*second
 
