@@ -102,10 +102,6 @@ x+=1*1
 ####################
 #Defining neuron groups
 ####################
-
-tc_start=1*second
-tc_stop=1.25*second  
-
 inhibitory_neurons=NeuronGroup(nr_of_inhibitory_neurons,inh_eqs,threshold=inh_th,reset=nmda_reset,refractory=inh_ref, clock=simulation_clock, order=2)
 
 exc_neurons = NeuronGroup(nr_of_excitatory_neurons,exc_eqs,threshold=V_th_exc,reset=reset,refractory=ref_exc, clock=simulation_clock, order=2)
