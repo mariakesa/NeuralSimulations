@@ -7,6 +7,17 @@ Created on Mon Jul 27 15:02:02 2015
 
 from brian import *
 
+'''
+This is an implementation of the working memory model
+from "Synaptic Mechanims and Network Dynamics
+Underlying Spatial Working Memory in Cortical
+Network Model", Compte et al, 2000 Cerebral Cortex.
+It was made according to the Stanford
+Large Scale Neural Simulations course
+materials available at http://web.stanford.edu/group/brainsinsilicon/courses.html
+(first problem set).
+'''
+
 #########
 #Number of Neurons
 ##########
