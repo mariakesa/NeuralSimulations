@@ -202,9 +202,9 @@ R= SpikeMonitor(input_exc_Poisson)
 O= SpikeMonitor(input_signal)
 run(simulation_time)
 spikes=M.spikes
-#raster_plot(Z)
+raster_plot(Z)
 
 #This plots the synaptic gating variable for NMDA inhibitory
 #neurons or excitatory neurons
-plot(NMDA_profile_inh)
+#plot(NMDA_profile_inh)
 #plot(NMDA_profile)
